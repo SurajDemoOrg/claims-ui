@@ -78,6 +78,7 @@ export function ProcessNewClaim({
             onClick={onProcessReview}
             disabled={!canProcess}
             size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl disabled:hover:scale-100 disabled:hover:bg-blue-600"
           >
             Process & Review
           </Button>

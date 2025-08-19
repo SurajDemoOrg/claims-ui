@@ -17,6 +17,7 @@ interface ReviewClaimProps {
   receipts: UploadedFile[];
   extractedReceiptData: ExtractedReceiptData[];
   onSubmit: () => void;
+  isSubmitting?: boolean;
 }
 
 export function ReviewClaim({
@@ -25,7 +26,8 @@ export function ReviewClaim({
   claimForm,
   receipts,
   extractedReceiptData,
-  onSubmit
+  onSubmit,
+  isSubmitting = false
 }: ReviewClaimProps) {
   const [selectedDocument, setSelectedDocument] = useState<UploadedFile | null>(null);
 
@@ -138,8 +140,20 @@ export function ReviewClaim({
           </Card>
 
           <div className="mt-8">
-            <Button onClick={onSubmit} size="lg" className="w-full">
-              Submit Claim
+            <Button 
+              onClick={onSubmit} 
+              size="lg" 
+              disabled={isSubmitting}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl disabled:hover:scale-100 disabled:shadow-md"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Submitting...
+                </div>
+              ) : (
+                'Submit Claim'
+              )}
             </Button>
           </div>
         </div>

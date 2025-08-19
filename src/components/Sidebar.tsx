@@ -1,13 +1,16 @@
-import React from 'react';
-import { Screen } from '../App';
+import { Link, useLocation } from 'react-router-dom';
 import { FileText, History } from 'lucide-react';
 
-interface SidebarProps {
-  currentScreen: Screen;
-  setCurrentScreen: (screen: Screen) => void;
-}
+export function Sidebar() {
+  const location = useLocation();
+  
+  const isActive = (path: string) => {
+    if (path === '/claims/process') {
+      return location.pathname === '/claims/process' || location.pathname === '/claims/process/review';
+    }
+    return location.pathname.startsWith(path);
+  };
 
-export function Sidebar({ currentScreen, setCurrentScreen }: SidebarProps) {
   return (
     <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
       {/* Header */}
@@ -24,30 +27,30 @@ export function Sidebar({ currentScreen, setCurrentScreen }: SidebarProps) {
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
           <li>
-            <button
-              onClick={() => setCurrentScreen('process')}
+            <Link
+              to="/claims/process"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                currentScreen === 'process'
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                isActive('/claims/process')
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               <FileText className="w-5 h-5" />
               Process New Claim
-            </button>
+            </Link>
           </li>
           <li>
-            <button
-              onClick={() => setCurrentScreen('previous')}
+            <Link
+              to="/claims/view"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                currentScreen === 'previous'
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                isActive('/claims/view')
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               <History className="w-5 h-5" />
               View Previous Claims
-            </button>
+            </Link>
           </li>
         </ul>
       </nav>
