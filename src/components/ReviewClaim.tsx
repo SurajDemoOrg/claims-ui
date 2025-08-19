@@ -7,7 +7,8 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { DocumentViewer } from './DocumentViewer';
-import { AlertTriangle, FileText, Image } from 'lucide-react';
+import { DocumentThumbnail } from './DocumentThumbnail';
+import { AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface ReviewClaimProps {
@@ -34,13 +35,6 @@ export function ReviewClaim({
   // Mock anomaly detection
   const hasAmountAnomaly = formData.totalAmount === '127.50'; // Mock condition
 
-  const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) {
-      return <Image className="w-4 h-4" />;
-    }
-    return <FileText className="w-4 h-4" />;
-  };
-
   return (
     <div className="flex h-full">
       {/* Left Column - Generated Form and Claim Form Preview */}
@@ -60,14 +54,11 @@ export function ReviewClaim({
                 <CardTitle>Uploaded Claim Form</CardTitle>
               </CardHeader>
               <CardContent>
-                <div 
-                  className="flex items-center gap-3 p-4 border border-border rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                <DocumentThumbnail
+                  document={claimForm}
                   onClick={() => setSelectedDocument(claimForm)}
-                >
-                  {getFileIcon(claimForm.type)}
-                  <span className="flex-1 text-sm">{claimForm.name}</span>
-                  <span className="text-xs text-muted-foreground">Click to preview</span>
-                </div>
+                  className="w-full"
+                />
               </CardContent>
             </Card>
           )}
@@ -168,16 +159,11 @@ export function ReviewClaim({
               <h2 className="text-xl mb-4">Bill Receipts ({receipts.length})</h2>
               <div className="grid grid-cols-2 gap-3">
                 {receipts.map((receipt) => (
-                  <button
+                  <DocumentThumbnail
                     key={receipt.id}
+                    document={receipt}
                     onClick={() => setSelectedDocument(receipt)}
-                    className="p-3 border border-border rounded-lg hover:border-primary transition-colors text-left"
-                  >
-                    <div className="w-full h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                      {getFileIcon(receipt.type)}
-                    </div>
-                    <p className="text-xs truncate">{receipt.name}</p>
-                  </button>
+                  />
                 ))}
               </div>
             </div>

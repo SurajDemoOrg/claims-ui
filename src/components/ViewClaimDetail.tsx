@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DetailedClaim } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -8,7 +8,8 @@ import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { DocumentViewer } from './DocumentViewer';
-import { ArrowLeft, FileText, Image, AlertTriangle } from 'lucide-react';
+import { DocumentThumbnail } from './DocumentThumbnail';
+import { ArrowLeft, AlertTriangle } from 'lucide-react';
 
 interface ViewClaimDetailProps {
   claim: DetailedClaim;
@@ -17,19 +18,6 @@ interface ViewClaimDetailProps {
 
 export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
   const [selectedDocument, setSelectedDocument] = useState<typeof claim.claimForm | typeof claim.receipts[0] | null>(null);
-
-  const getStatusVariant = (status: DetailedClaim['status']) => {
-    switch (status) {
-      case 'Processed':
-        return 'default' as const;
-      case 'Pending Review':
-        return 'secondary' as const;
-      case 'Anomaly Found':
-        return 'destructive' as const;
-      default:
-        return 'default' as const;
-    }
-  };
 
   const getStatusColor = (status: DetailedClaim['status']) => {
     switch (status) {
@@ -42,13 +30,6 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
       default:
         return '';
     }
-  };
-
-  const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) {
-      return <Image className="w-4 h-4" />;
-    }
-    return <FileText className="w-4 h-4" />;
   };
 
   const hasAnomaly = claim.status === 'Anomaly Found';
@@ -90,14 +71,11 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
               <CardTitle>Original Claim Form</CardTitle>
             </CardHeader>
             <CardContent>
-              <div 
-                className="flex items-center gap-3 p-4 border border-border rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+              <DocumentThumbnail
+                document={claim.claimForm}
                 onClick={() => setSelectedDocument(claim.claimForm)}
-              >
-                {getFileIcon(claim.claimForm.type)}
-                <span className="flex-1 text-sm">{claim.claimForm.name}</span>
-                <span className="text-xs text-muted-foreground">Click to preview</span>
-              </div>
+                className="w-full"
+              />
             </CardContent>
           </Card>
 
@@ -177,16 +155,11 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
               <h2 className="text-xl mb-4">Bill Receipts ({claim.receipts.length})</h2>
               <div className="grid grid-cols-2 gap-3">
                 {claim.receipts.map((receipt) => (
-                  <button
+                  <DocumentThumbnail
                     key={receipt.id}
+                    document={receipt}
                     onClick={() => setSelectedDocument(receipt)}
-                    className="p-3 border border-border rounded-lg hover:border-primary transition-colors text-left"
-                  >
-                    <div className="w-full h-16 bg-muted rounded mb-2 flex items-center justify-center">
-                      {getFileIcon(receipt.type)}
-                    </div>
-                    <p className="text-xs truncate">{receipt.name}</p>
-                  </button>
+                  />
                 ))}
               </div>
             </div>
