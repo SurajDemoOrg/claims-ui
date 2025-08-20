@@ -264,6 +264,16 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="totalCost">Total Cost</Label>
+                  <Input
+                    id="totalCost"
+                    value={`$${formData.totalCost}`}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
                 {formData.dayCareCost && (
                   <div className="space-y-2">
                     <Label htmlFor="dayCareCost">Day Care Cost</Label>
@@ -309,6 +319,64 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                           <TableCell className="text-xs">${item['Out of Pocket Cost']}</TableCell>
                         </TableRow>
                       ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bill Details Section */}
+          {claim.billData && claim.billData.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Bill Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-64 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Provider Name</TableHead>
+                        <TableHead className="text-xs">Patient Name</TableHead>
+                        <TableHead className="text-xs">Service Date</TableHead>
+                        <TableHead className="text-xs">Total Cost</TableHead>
+                        <TableHead className="text-xs">Document</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {claim.billData.map((bill, index) => {
+                        // Find matching receipt document based on filename
+                        const matchingReceipt = receipts.find(receipt => 
+                          receipt.name.toLowerCase().includes(bill.filename.toLowerCase().replace(/\.(jpg|jpeg|png|pdf)$/i, '')) ||
+                          bill.filename.toLowerCase().includes(receipt.name.toLowerCase().replace(/\.(jpg|jpeg|png|pdf)$/i, ''))
+                        );
+                        
+                        return (
+                          <TableRow key={index}>
+                            <TableCell className="text-xs">{bill.provider_name}</TableCell>
+                            <TableCell className="text-xs">{bill.patient_name}</TableCell>
+                            <TableCell className="text-xs">{bill.service_date}</TableCell>
+                            <TableCell className="text-xs font-medium">{bill.total_cost}</TableCell>
+                            <TableCell className="text-xs">
+                              {bill.filename && (
+                                matchingReceipt ? (
+                                  <button
+                                    onClick={() => setSelectedDocument(matchingReceipt)}
+                                    className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                                  >
+                                    {bill.filename}
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-600">
+                                    {bill.filename}
+                                  </span>
+                                )
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

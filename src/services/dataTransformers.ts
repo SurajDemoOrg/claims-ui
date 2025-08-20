@@ -99,7 +99,7 @@ export function transformToDetailedClaim(apiClaim: ClaimResponse): DetailedClaim
       providerName: apiClaim.claim['Provider Name'] || apiClaim.bill.provider,
       typeOfService: apiClaim.claim['Description of service or item purchased'] || '',
       outOfPocketCost: parseFloat(apiClaim.bill.amount) || 0,
-      totalCost: parseFloat(apiClaim.bill.amount) || 0,
+      totalCost: apiClaim.claim?.['Total Cost'] || 0,
       providerSignature: apiClaim.claim['Provider\'s Signature (Dependent Care FSA)'],
       dayCareCost: parseFloat(apiClaim.claim['Daycare Cost (Dependent Care FSA)']) || undefined
     },

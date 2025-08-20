@@ -41,7 +41,6 @@ export function ViewClaimDetailPage() {
       const apiClaim = await claimsApi.getClaimById(id);
       const transformedClaim = transformToDetailedClaim(apiClaim);
       setClaim(transformedClaim);
-      console.log(transformedClaim);
       
       const duration = performance.now() - startTime;
       logger.performance('fetch_claim_detail', duration, {
