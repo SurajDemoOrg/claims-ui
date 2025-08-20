@@ -30,24 +30,59 @@ export interface ExtractedReceiptData {
   totalCost: string;
 }
 
+// Updated PreviousClaim interface to match API response
 export interface PreviousClaim {
   id: string;
   dateSubmitted: string;
   claimantName: string;
   totalAmount: string;
-  status: 'Processed' | 'Pending Review' | 'Anomaly Found';
+  status: 'PROCESSED' | 'PENDING' | 'ANOMALY_DETECTED';
+  anomalies?: string[];
 }
 
+// Updated DetailedClaim interface to match API response structure
 export interface DetailedClaim {
   id: string;
   dateSubmitted: string;
   claimantName: string;
   totalAmount: string;
-  status: 'Processed' | 'Pending Review' | 'Anomaly Found';
-  formData: ClaimFormData;
-  claimForm: UploadedFile;
-  receipts: UploadedFile[];
-  extractedReceiptData: ExtractedReceiptData[];
+  status: 'PROCESSED' | 'PENDING' | 'ANOMALY_DETECTED';
+  anomalies: string[];
+  bill: {
+    amount: string;
+    date: string;
+    description: string;
+    provider: string;
+    receipt_attached: boolean;
+  };
+  bill_files: string[];
+  claim: {
+    'Participant Name (First, MI, Last)': string;
+    'Receipts.Date of service': string;
+    'Provider Name': string;
+    'Out-of-Pocket Cost (i.e. Patient Responsibility)': string;
+    'Description of service or item purchased': string;
+    'Service Dates (start and end dates)': string;
+    'Employee ID': string;
+    'Employer Name': string;
+    'Plan Type': string;
+    'Social Security Number': string;
+    receipt_attached: boolean;
+    'Receipts.Description of service or item purchased': string;
+    'Receipts.Dollar amount': string;
+    'Receipts.Name of provider': string;
+    'Daycare Cost (Dependent Care FSA)': string;
+    'Dependent Care FSA Provider Name': string;
+    'Dependent Care FSA Service Dates (start and end dates)': string;
+    'Provider\'s Signature (Dependent Care FSA)': string;
+    'Total: $ (Dependent Care FSA)': string;
+  };
+  claim_file: string;
+  // Legacy fields for backward compatibility with existing components
+  formData?: ClaimFormData;
+  claimForm?: UploadedFile;
+  receipts?: UploadedFile[];
+  extractedReceiptData?: ExtractedReceiptData[];
 }
 
 export default function App() {

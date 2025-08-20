@@ -17,22 +17,55 @@ interface ViewClaimDetailProps {
 }
 
 export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
-  const [selectedDocument, setSelectedDocument] = useState<typeof claim.claimForm | typeof claim.receipts[0] | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+
+  // Helper to get form data with fallbacks to API structure
+  const getFormData = () => {
+    if (claim.formData) {
+      return claim.formData;
+    }
+    // Fallback to API structure
+    return {
+      participantName: claim.claim?.['Participant Name (First, MI, Last)'] || '',
+      dateOfService: claim.claim?.['Receipts.Date of service'] || claim.bill?.date || '',
+      providerName: claim.claim?.['Provider Name'] || claim.bill?.provider || '',
+      totalAmount: claim.bill?.amount || '0',
+      description: claim.claim?.['Description of service or item purchased'] || claim.bill?.description || ''
+    };
+  };
+
+  const formData = getFormData();
+  const receipts = claim.receipts || [];
+  const extractedReceiptData = claim.extractedReceiptData || [];
+  const claimForm = claim.claimForm;
 
   const getStatusColor = (status: DetailedClaim['status']) => {
     switch (status) {
-      case 'Processed':
+      case 'PROCESSED':
         return 'bg-green-100 text-green-800 hover:bg-green-100';
-      case 'Pending Review':
+      case 'PENDING':
         return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100';
-      case 'Anomaly Found':
+      case 'ANOMALY_DETECTED':
         return 'bg-red-100 text-red-800 hover:bg-red-100';
       default:
         return '';
     }
   };
 
-  const hasAnomaly = claim.status === 'Anomaly Found';
+  const getDisplayStatus = (status: DetailedClaim['status']) => {
+    switch (status) {
+      case 'PROCESSED':
+        return 'Processed';
+      case 'PENDING':
+        return 'Pending Review';
+      case 'ANOMALY_DETECTED':
+        return 'Anomaly Found';
+      default:
+        return status;
+    }
+  };
+
+  const hasAnomaly = claim.status === 'ANOMALY_DETECTED' || (claim.anomalies && claim.anomalies.length > 0);
 
   return (
     <div className="flex h-full">
@@ -60,24 +93,50 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                 </p>
               </div>
               <Badge className={getStatusColor(claim.status)}>
-                {claim.status}
+                {getDisplayStatus(claim.status)}
               </Badge>
             </div>
           </div>
 
           {/* Claim Form Preview */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Original Claim Form</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DocumentThumbnail
-                document={claim.claimForm}
-                onClick={() => setSelectedDocument(claim.claimForm)}
-                className="w-full"
-              />
-            </CardContent>
-          </Card>
+          {claimForm && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Original Claim Form</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DocumentThumbnail
+                  document={claimForm}
+                  onClick={() => setSelectedDocument(claimForm)}
+                  className="w-full"
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Anomalies Display */}
+          {hasAnomaly && claim.anomalies && claim.anomalies.length > 0 && (
+            <Card className="mb-6 border-orange-200 bg-orange-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-800">
+                  <AlertTriangle className="w-5 h-5" />
+                  Anomalies Detected
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {claim.anomalies.map((anomaly, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0" />
+                      <span className="text-orange-800 capitalize">
+                        {anomaly.replace(/_/g, ' ')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Claim Information (Read-only) */}
           <Card>
@@ -89,7 +148,7 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                 <Label htmlFor="participantName">Participant Name</Label>
                 <Input
                   id="participantName"
-                  value={claim.formData.participantName}
+                  value={formData.participantName}
                   readOnly
                   className="bg-muted"
                 />
@@ -100,7 +159,7 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                 <Input
                   id="dateOfService"
                   type="date"
-                  value={claim.formData.dateOfService}
+                  value={formData.dateOfService}
                   readOnly
                   className="bg-muted"
                 />
@@ -110,7 +169,7 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                 <Label htmlFor="providerName">Provider Name</Label>
                 <Input
                   id="providerName"
-                  value={claim.formData.providerName}
+                  value={formData.providerName}
                   readOnly
                   className="bg-muted"
                 />
@@ -121,7 +180,7 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                 <div className="relative">
                   <Input
                     id="totalAmount"
-                    value={`$${claim.formData.totalAmount}`}
+                    value={`$${formData.totalAmount}`}
                     readOnly
                     className={hasAnomaly ? 'bg-yellow-50 border-yellow-300' : 'bg-muted'}
                   />
@@ -135,7 +194,7 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  value={claim.formData.description}
+                  value={formData.description}
                   readOnly
                   className="bg-muted"
                   rows={3}
@@ -150,11 +209,11 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
       <div className="w-96 border-l border-border p-6 overflow-auto">
         <div className="space-y-6">
           {/* Bill Receipts */}
-          {claim.receipts.length > 0 && (
+          {receipts.length > 0 && (
             <div>
-              <h2 className="text-xl mb-4">Bill Receipts ({claim.receipts.length})</h2>
+              <h2 className="text-xl mb-4">Bill Receipts ({receipts.length})</h2>
               <div className="grid grid-cols-2 gap-3">
-                {claim.receipts.map((receipt) => (
+                {receipts.map((receipt) => (
                   <DocumentThumbnail
                     key={receipt.id}
                     document={receipt}
@@ -166,7 +225,7 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
           )}
 
           {/* Extracted Receipt Data */}
-          {claim.extractedReceiptData.length > 0 && (
+          {extractedReceiptData.length > 0 && (
             <div>
               <h2 className="text-xl mb-4">Extracted Receipt Data</h2>
               <Card>
@@ -182,7 +241,7 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {claim.extractedReceiptData.map((data) => (
+                        {extractedReceiptData.map((data) => (
                           <TableRow key={data.id}>
                             <TableCell className="text-xs font-medium">{data.patientName}</TableCell>
                             <TableCell className="text-xs">{new Date(data.dateOfService).toLocaleDateString()}</TableCell>
@@ -199,9 +258,9 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
               {/* Total Summary */}
               <div className="mt-4 p-3 bg-muted rounded-lg">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Total from {claim.extractedReceiptData.length} Receipt{claim.extractedReceiptData.length !== 1 ? 's' : ''}:</span>
+                  <span className="text-sm font-medium">Total from {extractedReceiptData.length} Receipt{extractedReceiptData.length !== 1 ? 's' : ''}:</span>
                   <span className="text-sm font-medium">
-                    ${claim.extractedReceiptData.reduce((sum, item) => 
+                    ${extractedReceiptData.reduce((sum, item) => 
                       sum + parseFloat(item.totalCost.replace('$', '')), 0
                     ).toFixed(2)}
                   </span>
@@ -212,6 +271,36 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                     Anomaly detected: Total amounts do not match
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Bill Information from API */}
+          {claim.bill && (
+            <div>
+              <h2 className="text-xl mb-4">Bill Information</h2>
+              <Card>
+                <CardContent className="space-y-2 text-sm">
+                  <div><strong>Provider:</strong> {claim.bill.provider}</div>
+                  <div><strong>Amount:</strong> ${claim.bill.amount}</div>
+                  <div><strong>Date:</strong> {claim.bill.date}</div>
+                  <div><strong>Description:</strong> {claim.bill.description}</div>
+                  <div><strong>Receipt Attached:</strong> {claim.bill.receipt_attached ? 'Yes' : 'No'}</div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Bill Files from API */}
+          {claim.bill_files && claim.bill_files.length > 0 && (
+            <div>
+              <h2 className="text-xl mb-4">Bill Files</h2>
+              <div className="space-y-2">
+                {claim.bill_files.map((fileName, index) => (
+                  <div key={index} className="p-2 bg-muted rounded text-sm">
+                    📄 {fileName}
+                  </div>
+                ))}
               </div>
             </div>
           )}
