@@ -24,13 +24,72 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
     if (claim.formData) {
       return claim.formData;
     }
-    // Fallback to API structure
+    
+    // Try to access the raw API structure directly first
+    const rawClaim = claim.claim;
+    
+    // Updated to match new API structure with better fallbacks
     return {
-      participantName: claim.claim?.['Participant Name (First, MI, Last)'] || '',
-      dateOfService: claim.claim?.['Receipts.Date of service'] || claim.bill?.date || '',
-      providerName: claim.claim?.['Provider Name'] || claim.bill?.provider || '',
-      totalAmount: claim.bill?.amount || '0',
-      description: claim.claim?.['Description of service or item purchased'] || claim.bill?.description || ''
+      participantName: rawClaim?.['Participant Name'] || 
+                      claim.claimData?.participantName || 
+                      claim.claim?.['Participant Name (First, MI, Last)'] || 
+                      '',
+      socialSecurityNumber: rawClaim?.['Social Security Number'] ||
+                           claim.claimData?.socialSecurityNumber || 
+                           claim.claim?.['Social Security Number'] || 
+                           '',
+      employerName: rawClaim?.['Employer Name'] ||
+                   claim.claimData?.employerName || 
+                   claim.claim?.['Employer Name'] || 
+                   '',
+      employeeId: rawClaim?.['Employee ID'] ||
+                 claim.claimData?.employeeId || 
+                 claim.claim?.['Employee ID'] || 
+                 '',
+      planType: rawClaim?.['Lists']?.[0]?.['Plan Type'] ||
+               claim.claimData?.lists?.[0]?.['Plan Type'] || 
+               claim.claim?.['Plan Type'] || 
+               '',
+      serviceStartDate: rawClaim?.['Service StartDate'] ||
+                       rawClaim?.['Lists']?.[0]?.['Service Start Date'] ||
+                       claim.claimData?.serviceStartDate || 
+                       claim.claim?.['Service StartDate'] || 
+                       claim.claim?.['Service Start Date'] ||
+                       '',
+      serviceEndDate: rawClaim?.['Service EndDate'] ||
+                     rawClaim?.['Lists']?.[0]?.['Service End Date'] ||
+                     claim.claimData?.serviceEndDate || 
+                     claim.claim?.['Service EndDate'] || 
+                     claim.claim?.['Service End Date'] ||
+                     '',
+      providerName: rawClaim?.['Provider Name'] ||
+                   rawClaim?.['Lists']?.[0]?.['Provider'] ||
+                   claim.claimData?.providerName || 
+                   claim.claim?.['Provider Name'] || 
+                   claim.billData?.[0]?.provider_name || 
+                   '',
+      typeOfService: rawClaim?.['Lists']?.[0]?.['Type of Service'] ||
+                    claim.claimData?.lists?.[0]?.['Type of Service'] || 
+                    claim.claim?.['Description of service or item purchased'] || 
+                    '',
+      outOfPocketCost: rawClaim?.['Lists']?.[0]?.['Out of Pocket Cost'] ||
+                      claim.claimData?.lists?.[0]?.['Out of Pocket Cost'] || 
+                      parseFloat(claim.bill?.amount || '0') || 
+                      0,
+      totalCost: rawClaim?.['Total Cost'] ||
+                claim.claimData?.totalCost || 
+                parseFloat(claim.bill?.amount || '0') || 
+                claim.claim?.['Total Cost'] ||
+                0,
+      providerSignature: rawClaim?.['Provider Signature'] ||
+                        claim.claimData?.providerSignature || 
+                        claim.claim?.['Provider Signature'] || 
+                        '',
+      dayCareCost: rawClaim?.['Day Care Cost'] ||
+                  claim.claimData?.dayCareCost || 
+                  parseFloat(claim.claim?.['Day Care Cost'] || '0') || 
+                  undefined,
+      lists: rawClaim?.['Lists'] || claim.claimData?.lists || []
     };
   };
 
@@ -156,10 +215,20 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="socialSecurityNumber">Social Security Number</Label>
+                  <Input
+                    id="socialSecurityNumber"
+                    value={formData.socialSecurityNumber}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="employeeId">Employee ID</Label>
                   <Input
                     id="employeeId"
-                    value={claim.claim?.['Employee ID'] || ''}
+                    value={formData.employeeId}
                     readOnly
                     className="bg-muted"
                   />
@@ -169,151 +238,83 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                   <Label htmlFor="employerName">Employer Name</Label>
                   <Input
                     id="employerName"
-                    value={claim.claim?.['Employer Name'] || ''}
+                    value={formData.employerName}
                     readOnly
                     className="bg-muted"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="planType">Plan Type</Label>
+                  <Label htmlFor="serviceStartDate">Service Start Date</Label>
                   <Input
-                    id="planType"
-                    value={claim.claim?.['Plan Type'] || ''}
+                    id="serviceStartDate"
+                    value={formData.serviceStartDate || 'N/A'}
                     readOnly
                     className="bg-muted"
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Service Information */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Service Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dateOfService">Date of Service</Label>
+                  <Label htmlFor="serviceEndDate">Service End Date</Label>
                   <Input
-                    id="dateOfService"
-                    value={formData.dateOfService}
+                    id="serviceEndDate"
+                    value={formData.serviceEndDate || 'N/A'}
                     readOnly
                     className="bg-muted"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="serviceDates">Service Dates (Range)</Label>
-                  <Input
-                    id="serviceDates"
-                    value={claim.claim?.['Service Dates (start and end dates)'] || ''}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="providerName">Provider Name</Label>
-                  <Input
-                    id="providerName"
-                    value={formData.providerName}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="totalAmount">Out-of-Pocket Cost</Label>
-                  <div className="relative">
+                {formData.dayCareCost && (
+                  <div className="space-y-2">
+                    <Label htmlFor="dayCareCost">Day Care Cost</Label>
                     <Input
-                      id="totalAmount"
-                      value={`$${formData.totalAmount}`}
+                      id="dayCareCost"
+                      value={`$${formData.dayCareCost}`}
                       readOnly
-                      className={hasAnomaly ? 'bg-yellow-50 border-yellow-300' : 'bg-muted'}
+                      className="bg-muted"
                     />
-                    {hasAnomaly && (
-                      <AlertTriangle className="absolute right-3 top-3 w-4 h-4 text-red-500" />
-                    )}
                   </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description of Service</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  readOnly
-                  className="bg-muted"
-                  rows={3}
-                />
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Receipt Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Receipt Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="receiptDate">Receipt Date of Service</Label>
-                  <Input
-                    id="receiptDate"
-                    value={claim.claim?.['Receipts.Date of service'] || ''}
-                    readOnly
-                    className="bg-muted"
-                  />
+          {/* Service Items List */}
+          {((claim.claimData?.lists && claim.claimData.lists.length > 0) || (claim.claim?.['Lists'] && claim.claim['Lists'].length > 0)) && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Service Items</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-64 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Plan Type</TableHead>
+                        <TableHead className="text-xs">Start Date</TableHead>
+                        <TableHead className="text-xs">End Date</TableHead>
+                        <TableHead className="text-xs">Provider</TableHead>
+                        <TableHead className="text-xs">Service Type</TableHead>
+                        <TableHead className="text-xs">Out of Pocket Cost</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(claim.claim?.['Lists'] || claim.claimData?.lists || []).map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="text-xs">{item['Plan Type']}</TableCell>
+                          <TableCell className="text-xs">{item['Service Start Date']}</TableCell>
+                          <TableCell className="text-xs">{item['Service End Date']}</TableCell>
+                          <TableCell className="text-xs">{item['Provider']}</TableCell>
+                          <TableCell className="text-xs">{item['Type of Service']}</TableCell>
+                          <TableCell className="text-xs">${item['Out of Pocket Cost']}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="receiptAmount">Receipt Dollar Amount</Label>
-                  <Input
-                    id="receiptAmount"
-                    value={claim.claim?.['Receipts.Dollar amount'] ? `$${claim.claim['Receipts.Dollar amount']}` : ''}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="receiptProvider">Receipt Provider Name</Label>
-                  <Input
-                    id="receiptProvider"
-                    value={claim.claim?.['Receipts.Name of provider'] || ''}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="receiptAttached">Receipt Attached</Label>
-                  <Input
-                    id="receiptAttached"
-                    value={claim.claim?.receipt_attached ? 'Yes' : 'No'}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="receiptDescription">Receipt Description</Label>
-                <Textarea
-                  id="receiptDescription"
-                  value={claim.claim?.['Receipts.Description of service or item purchased'] || ''}
-                  readOnly
-                  className="bg-muted"
-                  rows={2}
-                />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Additional Claim Metadata */}
           <Card>
@@ -386,89 +387,7 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
             </div>
           )}
 
-          {/* Extracted Receipt Data */}
-          {extractedReceiptData.length > 0 && (
-            <div>
-              <h2 className="text-xl mb-4">Extracted Receipt Data</h2>
-              <Card>
-                <CardContent className="p-0">
-                  <div className="max-h-64 overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-xs">Patient</TableHead>
-                          <TableHead className="text-xs">Date</TableHead>
-                          <TableHead className="text-xs">Provider</TableHead>
-                          <TableHead className="text-xs">Cost</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {extractedReceiptData.map((data) => (
-                          <TableRow key={data.id}>
-                            <TableCell className="text-xs font-medium">{data.patientName}</TableCell>
-                            <TableCell className="text-xs">{new Date(data.dateOfService).toLocaleDateString()}</TableCell>
-                            <TableCell className="text-xs">{data.providerName}</TableCell>
-                            <TableCell className="text-xs">{data.totalCost}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              {/* Total Summary */}
-              <div className="mt-4 p-3 bg-muted rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Total from {extractedReceiptData.length} Receipt{extractedReceiptData.length !== 1 ? 's' : ''}:</span>
-                  <span className="text-sm font-medium">
-                    ${extractedReceiptData.reduce((sum, item) => 
-                      sum + parseFloat(item.totalCost.replace('$', '')), 0
-                    ).toFixed(2)}
-                  </span>
-                </div>
-                {hasAnomaly && (
-                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                    <AlertTriangle className="w-3 h-3 inline mr-1" />
-                    Anomaly detected: Total amounts do not match
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Bill Information from API */}
-          {claim.bill && (
-            <div>
-              <h2 className="text-xl mb-4">Bill Information</h2>
-              <Card>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Provider:</span>
-                      <span>{claim.bill.provider}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Amount:</span>
-                      <span className="font-semibold">${claim.bill.amount}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Date:</span>
-                      <span>{claim.bill.date}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Receipt Attached:</span>
-                      <span>{claim.bill.receipt_attached ? 'Yes' : 'No'}</span>
-                    </div>
-                  </div>
-                  <div className="pt-2 border-t">
-                    <div className="font-medium mb-1">Description:</div>
-                    <div className="text-xs text-muted-foreground">{claim.bill.description}</div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+          
 
           {/* Dependent Care FSA Information */}
           {claim.claim && (
@@ -513,32 +432,6 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                   )}
                 </CardContent>
               </Card>
-            </div>
-          )}
-
-          {/* Bill Files from API */}
-          {claim.bill_files && claim.bill_files.length > 0 && (
-            <div>
-              <h2 className="text-xl mb-4">Bill Files ({claim.bill_files.length})</h2>
-              <div className="space-y-2">
-                {claim.bill_files.map((fileName, index) => (
-                  <div key={index} className="p-3 bg-muted rounded-lg text-sm flex items-center gap-2">
-                    <span className="text-lg">📄</span>
-                    <span className="flex-1 truncate">{fileName}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Claim File */}
-          {claim.claim_file && (
-            <div>
-              <h2 className="text-xl mb-4">Claim Form File</h2>
-              <div className="p-3 bg-muted rounded-lg text-sm flex items-center gap-2">
-                <span className="text-lg">📋</span>
-                <span className="flex-1 truncate">{claim.claim_file}</span>
-              </div>
             </div>
           )}
         </div>

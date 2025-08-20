@@ -1,28 +1,68 @@
 import { ClaimResponse } from './claimsApi';
 import { PreviousClaim, DetailedClaim } from '../App';
+import { logger } from '../utils/logger';
 
 // Transform API response to PreviousClaim format
 export function transformToPreviousClaim(apiClaim: ClaimResponse): PreviousClaim {
-  return {
+  logger.debug('Transforming API claim to PreviousClaim format', {
+    component: 'dataTransformers',
+    action: 'transformToPreviousClaim',
+    claimId: apiClaim.id,
+    metadata: { status: apiClaim.claim_status }
+  });
+
+  // Handle both new and legacy API structures
+  const participantName = apiClaim.claim?.['Participant Name'] || 
+                          apiClaim.legacyClaim?.['Participant Name (First, MI, Last)'] || 
+                          'Unknown';
+  
+  const totalAmount = apiClaim.claim?.['Total Cost'] ? 
+                     `$${apiClaim.claim['Total Cost']}` : 
+                     `$${apiClaim.legacyBill?.amount || '0'}`;
+
+  const transformed = {
     id: apiClaim.id,
     dateSubmitted: new Date(apiClaim.created_at).toLocaleDateString(),
-    ParticipantName: apiClaim.claim['Participant Name (First, MI, Last)'] || 'Unknown',
-    totalAmount: `$${apiClaim.bill.amount}`,
+    participantName,
+    totalAmount,
     status: apiClaim.claim_status,
     anomalies: apiClaim.anomalies,
-    employeeId: apiClaim.claim['Employee ID'],
-    employerName: apiClaim.claim['Employer Name'],
-    planType: apiClaim.claim['Plan Type'],
-    provider: apiClaim.bill.provider
+    employeeId: apiClaim.claim?.['Employee ID'] || apiClaim.legacyClaim?.['Employee ID'],
+    employerName: apiClaim.claim?.['Employer Name'] || apiClaim.legacyClaim?.['Employer Name'],
+    planType: apiClaim.claim?.['Lists']?.[0]?.['Plan Type'] || apiClaim.legacyClaim?.['Plan Type'],
+    provider: apiClaim.claim?.['Provider Name'] || apiClaim.legacyBill?.provider
   };
+
+  logger.debug('Successfully transformed PreviousClaim', {
+    component: 'dataTransformers',
+    action: 'transformToPreviousClaim',
+    claimId: apiClaim.id,
+    metadata: { 
+      participantName: transformed.participantName,
+      hasAnomalies: transformed.anomalies.length > 0
+    }
+  });
+
+  return transformed;
 }
 
 // Transform API response to DetailedClaim format
 export function transformToDetailedClaim(apiClaim: ClaimResponse): DetailedClaim {
-  return {
+  logger.debug('Transforming API claim to DetailedClaim format', {
+    component: 'dataTransformers',
+    action: 'transformToDetailedClaim',
+    claimId: apiClaim.id,
+    metadata: { 
+      status: apiClaim.claim_status,
+      billFileCount: apiClaim.bill_files.length,
+      hasAnomalies: apiClaim.anomalies.length > 0
+    }
+  });
+
+  const transformed = {
     id: apiClaim.id,
     dateSubmitted: new Date(apiClaim.created_at).toLocaleDateString(),
-    ParticipantName: apiClaim.claim['Participant Name (First, MI, Last)'] || 'Unknown',
+    participantName: apiClaim.claim['Participant Name (First, MI, Last)'] || 'Unknown',
     totalAmount: `$${apiClaim.bill.amount}`,
     status: apiClaim.claim_status,
     anomalies: apiClaim.anomalies,
@@ -32,13 +72,36 @@ export function transformToDetailedClaim(apiClaim: ClaimResponse): DetailedClaim
     bill_files: apiClaim.bill_files,
     claim: apiClaim.claim,
     claim_file: apiClaim.claim_file,
+    // New structured claim data
+    claimData: {
+      participantName: apiClaim.claim?.['Participant Name'] || 'Unknown',
+      socialSecurityNumber: apiClaim.claim?.['Social Security Number'] || '',
+      employerName: apiClaim.claim?.['Employer Name'] || '',
+      employeeId: apiClaim.claim?.['Employee ID'] || '',
+      lists: apiClaim.claim?.['Lists'] || [], // Now using the actual API Lists structure
+      totalCost: apiClaim.claim?.['Total Cost'] || parseFloat(apiClaim.bill?.amount) || 0,
+      serviceStartDate: apiClaim.claim?.['Service StartDate'] || '',
+      serviceEndDate: apiClaim.claim?.['Service EndDate'] || '',
+      providerName: apiClaim.claim?.['Provider Name'] || apiClaim.bill?.provider || '',
+      providerSignature: apiClaim.claim?.['Provider Signature'] || '',
+      dayCareCost: apiClaim.claim?.['Day Care Cost'] || undefined
+    },
+    // New structured bill data matching API response
+    billData: apiClaim.bill || [],
     // Transform to legacy format for existing components
     formData: {
-      participantName: apiClaim.claim['Participant Name (First, MI, Last)'],
-      dateOfService: apiClaim.claim['Receipts.Date of service'] || apiClaim.bill.date,
+      participantName: apiClaim.claim?.['Participant Name'] || 'Unknown',
+      socialSecurityNumber: apiClaim.claim?.['Social Security Number'],
+      employerName: apiClaim.claim?.['Employer Name'],
+      employeeId: apiClaim.claim?.['Employee ID'],
+      serviceStartDate: apiClaim.claim?.['Service StartDate'] || '',
+      serviceEndDate: apiClaim.claim?.['Service EndDate'] || '',
       providerName: apiClaim.claim['Provider Name'] || apiClaim.bill.provider,
-      totalAmount: apiClaim.bill.amount,
-      description: apiClaim.claim['Description of service or item purchased'] || apiClaim.bill.description
+      typeOfService: apiClaim.claim['Description of service or item purchased'] || '',
+      outOfPocketCost: parseFloat(apiClaim.bill.amount) || 0,
+      totalCost: parseFloat(apiClaim.bill.amount) || 0,
+      providerSignature: apiClaim.claim['Provider\'s Signature (Dependent Care FSA)'],
+      dayCareCost: parseFloat(apiClaim.claim['Daycare Cost (Dependent Care FSA)']) || undefined
     },
     claimForm: {
       id: `form-${apiClaim.id}`,
@@ -55,12 +118,25 @@ export function transformToDetailedClaim(apiClaim: ClaimResponse): DetailedClaim
     extractedReceiptData: apiClaim.bill_files.map((fileName, index) => ({
       id: `receipt-${apiClaim.id}-${index}`,
       fileName: fileName,
-      patientName: apiClaim.claim['Participant Name (First, MI, Last)'],
-      dateOfService: apiClaim.claim['Receipts.Date of service'] || apiClaim.bill.date,
       providerName: apiClaim.claim['Receipts.Name of provider'] || apiClaim.bill.provider,
+      patientName: apiClaim.claim['Participant Name (First, MI, Last)'],
+      serviceDate: apiClaim.claim['Receipts.Date of service'] || apiClaim.bill.date,
       totalCost: `$${apiClaim.claim['Receipts.Dollar amount'] || apiClaim.bill.amount}`
     }))
   };
+
+  logger.debug('Successfully transformed DetailedClaim', {
+    component: 'dataTransformers',
+    action: 'transformToDetailedClaim',
+    claimId: apiClaim.id,
+    metadata: { 
+      participantName: transformed.participantName,
+      receiptCount: transformed.receipts?.length || 0,
+      extractedDataCount: transformed.extractedReceiptData?.length || 0
+    }
+  });
+
+  return transformed;
 }
 
 // Helper function to map API status to display status

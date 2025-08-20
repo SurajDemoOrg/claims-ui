@@ -8,7 +8,8 @@ interface ProcessNewClaimProps {
   receipts: UploadedFile[];
   setClaimForm: (file: UploadedFile | null) => void;
   setReceipts: (files: UploadedFile[]) => void;
-  onProcessReview: () => void;
+  onSubmit: () => void;
+  isSubmitting?: boolean;
 }
 
 export function ProcessNewClaim({
@@ -16,7 +17,8 @@ export function ProcessNewClaim({
   receipts,
   setClaimForm,
   setReceipts,
-  onProcessReview
+  onSubmit,
+  isSubmitting = false
 }: ProcessNewClaimProps) {
   const canProcess = claimForm && receipts.length > 0;
 
@@ -72,15 +74,22 @@ export function ProcessNewClaim({
           </CardContent>
         </Card>
 
-        {/* Action Button */}
+        {/* Submit Button */}
         <div className="flex justify-end">
           <Button
-            onClick={onProcessReview}
-            disabled={!canProcess}
+            onClick={onSubmit}
+            disabled={!canProcess || isSubmitting}
             size="lg"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl disabled:hover:scale-100 disabled:hover:bg-blue-600"
+            className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl disabled:hover:scale-100 disabled:shadow-md"
           >
-            Process & Review
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Submitting...
+              </div>
+            ) : (
+              'Submit Claim'
+            )}
           </Button>
         </div>
       </div>

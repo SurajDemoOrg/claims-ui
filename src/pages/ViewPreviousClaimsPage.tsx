@@ -5,6 +5,7 @@ import { PreviousClaim } from '../App';
 import { claimsApi } from '../services/claimsApi';
 import { transformToPreviousClaim } from '../services/dataTransformers';
 import { Skeleton } from '../components/ui/skeleton';
+import { logger } from '../utils/logger';
 
 export function ViewPreviousClaimsPage() {
   const navigate = useNavigate();
@@ -12,41 +13,53 @@ export function ViewPreviousClaimsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  logger.componentMount('ViewPreviousClaimsPage');
+
   const fetchClaims = async () => {
+    const startTime = performance.now();
     try {
       setLoading(true);
       setError(null);
+      
+      logger.info('Fetching previous claims', {
+        component: 'ViewPreviousClaimsPage',
+        action: 'fetch_claims'
+      });
+      
       const apiClaims = await claimsApi.getAllClaims();
       const transformedClaims = apiClaims.map(transformToPreviousClaim);
       setClaims(transformedClaims);
-    } catch (err) {
-      console.error('Failed to fetch claims:', err);
-      setError('Failed to load claims. Please try again later.');
-      // Fallback to mock data in case of error
-      const mockPreviousClaims: PreviousClaim[] = [
-        {
-          id: 'CL-2024-001',
-          dateSubmitted: '2024-01-15',
-          ParticipantName: 'John Smith',
-          totalAmount: '$245.67',
-          status: 'PROCESSED'
-        },
-        {
-          id: 'CL-2024-002',
-          dateSubmitted: '2024-01-18',
-          ParticipantName: 'Sarah Johnson',
-          totalAmount: '$89.23',
-          status: 'PENDING'
-        },
-        {
-          id: 'CL-2024-003',
-          dateSubmitted: '2024-01-22',
-          ParticipantName: 'Mike Davis',
-          totalAmount: '$156.44',
-          status: 'ANOMALY_DETECTED'
+      
+      const duration = performance.now() - startTime;
+      logger.performance('fetch_claims', duration, {
+        component: 'ViewPreviousClaimsPage'
+      });
+      
+      logger.info('Successfully fetched and transformed claims', {
+        component: 'ViewPreviousClaimsPage',
+        action: 'fetch_claims',
+        metadata: { 
+          count: transformedClaims.length,
+          duration: Math.round(duration)
         }
-      ];
-      setClaims(mockPreviousClaims);
+      });
+    } catch (err) {
+      const duration = performance.now() - startTime;
+      logger.error('Failed to fetch claims', {
+        component: 'ViewPreviousClaimsPage',
+        action: 'fetch_claims',
+        metadata: { duration: Math.round(duration) }
+      }, err as Error);
+      
+      setError('Failed to load claims. Please try again later.');
+      
+      logger.error('API call failed, no fallback data available', {
+        component: 'ViewPreviousClaimsPage',
+        action: 'api_error_no_fallback'
+      });
+      
+      // No fallback - let the error state handle this
+      setClaims([]);
     } finally {
       setLoading(false);
     }
@@ -57,10 +70,21 @@ export function ViewPreviousClaimsPage() {
   }, []);
 
   const handleViewClaim = (claim: PreviousClaim) => {
+    logger.userAction('view_claim_detail', {
+      component: 'ViewPreviousClaimsPage',
+      claimId: claim.id,
+      metadata: { 
+        status: claim.status,
+        participantName: claim.ParticipantName
+      }
+    });
     navigate(`/claims/view/${claim.id}`);
   };
 
   const handleRetry = () => {
+    logger.userAction('retry_fetch_claims', {
+      component: 'ViewPreviousClaimsPage'
+    });
     fetchClaims();
   };
 

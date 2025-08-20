@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { UploadedFile } from '../App';
 import { Button } from './ui/button';
 import { X, FileText, Image, Plus } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 interface FileUploadProps {
   file?: UploadedFile | null;
@@ -51,8 +52,29 @@ export function FileUpload({
   };
 
   const handleFiles = (fileList: File[]) => {
+    logger.userAction('files_selected', {
+      component: 'FileUpload',
+      metadata: {
+        fileCount: fileList.length,
+        fileNames: fileList.map(f => f.name),
+        fileSizes: fileList.map(f => f.size),
+        fileTypes: fileList.map(f => f.type),
+        isMultiple: multiple,
+        totalSize: fileList.reduce((sum, f) => sum + f.size, 0)
+      }
+    });
+
     if (!multiple && fileList.length > 0) {
       const selectedFile = fileList[0];
+      logger.debug('Processing single file upload', {
+        component: 'FileUpload',
+        metadata: {
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          fileType: selectedFile.type
+        }
+      });
+
       const uploadedFile: UploadedFile = {
         id: `${Date.now()}-${selectedFile.name}`,
         name: selectedFile.name,
@@ -61,7 +83,20 @@ export function FileUpload({
         file: selectedFile
       };
       onFileSelect?.(uploadedFile);
+
+      logger.info('Single file uploaded successfully', {
+        component: 'FileUpload',
+        metadata: { fileName: selectedFile.name }
+      });
     } else if (multiple && fileList.length > 0) {
+      logger.debug('Processing multiple file upload', {
+        component: 'FileUpload',
+        metadata: {
+          newFileCount: fileList.length,
+          existingFileCount: files?.length || 0
+        }
+      });
+
       const uploadedFiles: UploadedFile[] = fileList.map(f => ({
         id: `${Date.now()}-${Math.random()}-${f.name}`,
         name: f.name,
@@ -74,6 +109,14 @@ export function FileUpload({
       const currentFiles = files || [];
       const allFiles = [...currentFiles, ...uploadedFiles];
       onFilesSelect?.(allFiles);
+
+      logger.info('Multiple files uploaded successfully', {
+        component: 'FileUpload',
+        metadata: {
+          newFileCount: fileList.length,
+          totalFileCount: allFiles.length
+        }
+      });
     }
   };
 
@@ -94,7 +137,13 @@ export function FileUpload({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onFileRemove?.()}
+            onClick={() => {
+              logger.userAction('file_removed', {
+                component: 'FileUpload',
+                metadata: { fileName: file.name, fileType: file.type }
+              });
+              onFileRemove?.();
+            }}
             className="text-destructive hover:text-destructive"
           >
             <X className="w-4 h-4" />

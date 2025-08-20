@@ -5,6 +5,7 @@ import { DetailedClaim } from '../App';
 import { claimsApi } from '../services/claimsApi';
 import { transformToDetailedClaim } from '../services/dataTransformers';
 import { Skeleton } from '../components/ui/skeleton';
+import { logger } from '../utils/logger';
 
 export function ViewClaimDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,121 +14,83 @@ export function ViewClaimDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  logger.componentMount('ViewClaimDetailPage', { claimId: id });
+
   const fetchClaim = async () => {
     if (!id) {
+      logger.warn('No claim ID provided, redirecting to claims list', {
+        component: 'ViewClaimDetailPage',
+        action: 'redirect_no_id'
+      });
       navigate('/claims/view');
       return;
     }
 
+    const startTime = performance.now();
     try {
       setLoading(true);
       setError(null);
+      
+      logger.info('Fetching claim details', {
+        component: 'ViewClaimDetailPage',
+        action: 'fetch_claim',
+        claimId: id
+      });
       
       // First try to get from API
       const apiClaim = await claimsApi.getClaimById(id);
       const transformedClaim = transformToDetailedClaim(apiClaim);
       setClaim(transformedClaim);
+      console.log(transformedClaim);
+      
+      const duration = performance.now() - startTime;
+      logger.performance('fetch_claim_detail', duration, {
+        component: 'ViewClaimDetailPage',
+        claimId: id
+      });
+      
+      logger.info('Successfully fetched claim details', {
+        component: 'ViewClaimDetailPage',
+        action: 'fetch_claim',
+        claimId: id,
+        metadata: { 
+          status: transformedClaim.status,
+          hasAnomalies: transformedClaim.anomalies.length > 0,
+          duration: Math.round(duration)
+        }
+      });
     } catch (err) {
-      console.error('Failed to fetch claim:', err);
+      const duration = performance.now() - startTime;
+      logger.error('Failed to fetch claim from API', {
+        component: 'ViewClaimDetailPage',
+        action: 'fetch_claim',
+        claimId: id,
+        metadata: { duration: Math.round(duration) }
+      }, err as Error);
       
       // Fallback: check localStorage for newly created claims
+      logger.info('Attempting localStorage fallback', {
+        component: 'ViewClaimDetailPage',
+        action: 'localStorage_fallback',
+        claimId: id
+      });
+      
       const storedClaim = localStorage.getItem(`claim_${id}`);
       if (storedClaim) {
         setClaim(JSON.parse(storedClaim));
+        logger.info('Successfully loaded claim from localStorage', {
+          component: 'ViewClaimDetailPage',
+          action: 'localStorage_fallback',
+          claimId: id
+        });
       } else {
-        // Fallback: check mock data
-        const mockDetailedClaims: DetailedClaim[] = [
-          {
-            id: 'CL-2024-001',
-            dateSubmitted: '2024-01-15',
-            ParticipantName: 'John Smith',
-            totalAmount: '$245.67',
-            status: 'PROCESSED',
-            anomalies: [],
-            bill: {
-              amount: '245.67',
-              date: '2024-01-10',
-              description: 'Emergency room visit and X-ray examination',
-              provider: 'General Hospital',
-              receipt_attached: true
-            },
-            bill_files: ['emergency-room-receipt.jpg', 'xray-receipt.jpg'],
-            claim: {
-              'Participant Name (First, MI, Last)': 'John Smith',
-              'Receipts.Date of service': '2024-01-10',
-              'Provider Name': 'General Hospital',
-              'Out-of-Pocket Cost (i.e. Patient Responsibility)': '245.67',
-              'Description of service or item purchased': 'Emergency room visit and X-ray examination',
-              'Service Dates (start and end dates)': '2024-01-10',
-              'Employee ID': 'EMP001',
-              'Employer Name': 'Tech Corp',
-              'Plan Type': 'HFSA',
-              'Social Security Number': '123456789',
-              receipt_attached: true,
-              'Receipts.Description of service or item purchased': 'Emergency room visit and X-ray examination',
-              'Receipts.Dollar amount': '245.67',
-              'Receipts.Name of provider': 'General Hospital',
-              'Daycare Cost (Dependent Care FSA)': '',
-              'Dependent Care FSA Provider Name': '',
-              'Dependent Care FSA Service Dates (start and end dates)': '',
-              'Provider\'s Signature (Dependent Care FSA)': '',
-              'Total: $ (Dependent Care FSA)': ''
-            },
-            claim_file: 'claim-form-john-smith.pdf',
-            formData: {
-              participantName: 'John Smith',
-              dateOfService: '2024-01-10',
-              providerName: 'General Hospital',
-              totalAmount: '245.67',
-              description: 'Emergency room visit and X-ray examination'
-            },
-            claimForm: {
-              id: 'form-001',
-              name: 'claim-form-john-smith.pdf',
-              type: 'application/pdf',
-              url: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400&h=300'
-            },
-            receipts: [
-              {
-                id: 'receipt-001-1',
-                name: 'emergency-room-receipt.jpg',
-                type: 'image/jpeg',
-                url: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300'
-              },
-              {
-                id: 'receipt-001-2',
-                name: 'xray-receipt.jpg',
-                type: 'image/jpeg',
-                url: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=400&h=300'
-              }
-            ],
-            extractedReceiptData: [
-              {
-                id: 'receipt-001-1',
-                fileName: 'emergency-room-receipt.jpg',
-                patientName: 'John Smith',
-                dateOfService: '2024-01-10',
-                providerName: 'General Hospital',
-                totalCost: '$185.67'
-              },
-              {
-                id: 'receipt-001-2',
-                fileName: 'xray-receipt.jpg',
-                patientName: 'John Smith',
-                dateOfService: '2024-01-10',
-                providerName: 'General Hospital',
-                totalCost: '$60.00'
-              }
-            ]
-          }
-        ];
+        logger.warn('Claim not found in localStorage either', {
+          component: 'ViewClaimDetailPage',
+          action: 'no_fallback_available',
+          claimId: id
+        });
         
-        const mockClaim = mockDetailedClaims.find(claim => claim.id === id);
-        if (mockClaim) {
-          setClaim(mockClaim);
-        } else {
-          setError('Claim not found');
-        }
+        setError('Failed to load claim details. Please try again later.');
       }
     } finally {
       setLoading(false);
