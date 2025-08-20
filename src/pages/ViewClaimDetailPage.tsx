@@ -40,7 +40,7 @@ export function ViewClaimDetailPage() {
           {
             id: 'CL-2024-001',
             dateSubmitted: '2024-01-15',
-            claimantName: 'John Smith',
+            ParticipantName: 'John Smith',
             totalAmount: '$245.67',
             status: 'PROCESSED',
             anomalies: [],

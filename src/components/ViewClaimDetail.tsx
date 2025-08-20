@@ -139,59 +139,110 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
           )}
 
           {/* Claim Information (Read-only) */}
-          <Card>
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Claim Information</CardTitle>
+              <CardTitle>Participant Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="participantName">Participant Name</Label>
-                <Input
-                  id="participantName"
-                  value={formData.participantName}
-                  readOnly
-                  className="bg-muted"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateOfService">Date of Service</Label>
-                <Input
-                  id="dateOfService"
-                  type="date"
-                  value={formData.dateOfService}
-                  readOnly
-                  className="bg-muted"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="providerName">Provider Name</Label>
-                <Input
-                  id="providerName"
-                  value={formData.providerName}
-                  readOnly
-                  className="bg-muted"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="totalAmount">Total Claim Amount</Label>
-                <div className="relative">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="participantName">Participant Name</Label>
                   <Input
-                    id="totalAmount"
-                    value={`$${formData.totalAmount}`}
+                    id="participantName"
+                    value={formData.participantName}
                     readOnly
-                    className={hasAnomaly ? 'bg-yellow-50 border-yellow-300' : 'bg-muted'}
+                    className="bg-muted"
                   />
-                  {hasAnomaly && (
-                    <AlertTriangle className="absolute right-3 top-3 w-4 h-4 text-red-500" />
-                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="employeeId">Employee ID</Label>
+                  <Input
+                    id="employeeId"
+                    value={claim.claim?.['Employee ID'] || ''}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="employerName">Employer Name</Label>
+                  <Input
+                    id="employerName"
+                    value={claim.claim?.['Employer Name'] || ''}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="planType">Plan Type</Label>
+                  <Input
+                    id="planType"
+                    value={claim.claim?.['Plan Type'] || ''}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Service Information */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Service Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfService">Date of Service</Label>
+                  <Input
+                    id="dateOfService"
+                    value={formData.dateOfService}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="serviceDates">Service Dates (Range)</Label>
+                  <Input
+                    id="serviceDates"
+                    value={claim.claim?.['Service Dates (start and end dates)'] || ''}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="providerName">Provider Name</Label>
+                  <Input
+                    id="providerName"
+                    value={formData.providerName}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="totalAmount">Out-of-Pocket Cost</Label>
+                  <div className="relative">
+                    <Input
+                      id="totalAmount"
+                      value={`$${formData.totalAmount}`}
+                      readOnly
+                      className={hasAnomaly ? 'bg-yellow-50 border-yellow-300' : 'bg-muted'}
+                    />
+                    {hasAnomaly && (
+                      <AlertTriangle className="absolute right-3 top-3 w-4 h-4 text-red-500" />
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description of Service</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -199,6 +250,117 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
                   className="bg-muted"
                   rows={3}
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Receipt Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Receipt Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="receiptDate">Receipt Date of Service</Label>
+                  <Input
+                    id="receiptDate"
+                    value={claim.claim?.['Receipts.Date of service'] || ''}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="receiptAmount">Receipt Dollar Amount</Label>
+                  <Input
+                    id="receiptAmount"
+                    value={claim.claim?.['Receipts.Dollar amount'] ? `$${claim.claim['Receipts.Dollar amount']}` : ''}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="receiptProvider">Receipt Provider Name</Label>
+                  <Input
+                    id="receiptProvider"
+                    value={claim.claim?.['Receipts.Name of provider'] || ''}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="receiptAttached">Receipt Attached</Label>
+                  <Input
+                    id="receiptAttached"
+                    value={claim.claim?.receipt_attached ? 'Yes' : 'No'}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="receiptDescription">Receipt Description</Label>
+                <Textarea
+                  id="receiptDescription"
+                  value={claim.claim?.['Receipts.Description of service or item purchased'] || ''}
+                  readOnly
+                  className="bg-muted"
+                  rows={2}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Additional Claim Metadata */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="claimId">Claim ID</Label>
+                  <Input
+                    id="claimId"
+                    value={claim.id}
+                    readOnly
+                    className="bg-muted font-mono text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="socialSecurity">Social Security Number</Label>
+                  <Input
+                    id="socialSecurity"
+                    value={claim.claim?.['Social Security Number'] ? `***-**-${claim.claim['Social Security Number'].slice(-4)}` : ''}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="createdAt">Created Date</Label>
+                  <Input
+                    id="createdAt"
+                    value={new Date(claim.created_at || claim.dateSubmitted).toLocaleString()}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="updatedAt">Last Updated</Label>
+                  <Input
+                    id="updatedAt"
+                    value={claim.updated_at ? new Date(claim.updated_at).toLocaleString() : 'N/A'}
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -280,12 +442,75 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
             <div>
               <h2 className="text-xl mb-4">Bill Information</h2>
               <Card>
-                <CardContent className="space-y-2 text-sm">
-                  <div><strong>Provider:</strong> {claim.bill.provider}</div>
-                  <div><strong>Amount:</strong> ${claim.bill.amount}</div>
-                  <div><strong>Date:</strong> {claim.bill.date}</div>
-                  <div><strong>Description:</strong> {claim.bill.description}</div>
-                  <div><strong>Receipt Attached:</strong> {claim.bill.receipt_attached ? 'Yes' : 'No'}</div>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Provider:</span>
+                      <span>{claim.bill.provider}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Amount:</span>
+                      <span className="font-semibold">${claim.bill.amount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Date:</span>
+                      <span>{claim.bill.date}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Receipt Attached:</span>
+                      <span>{claim.bill.receipt_attached ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t">
+                    <div className="font-medium mb-1">Description:</div>
+                    <div className="text-xs text-muted-foreground">{claim.bill.description}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Dependent Care FSA Information */}
+          {claim.claim && (
+            claim.claim['Daycare Cost (Dependent Care FSA)'] || 
+            claim.claim['Dependent Care FSA Provider Name'] || 
+            claim.claim['Dependent Care FSA Service Dates (start and end dates)'] ||
+            claim.claim['Total: $ (Dependent Care FSA)']
+          ) && (
+            <div>
+              <h2 className="text-xl mb-4">Dependent Care FSA</h2>
+              <Card>
+                <CardContent className="space-y-3 text-sm">
+                  {claim.claim['Dependent Care FSA Provider Name'] && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Provider:</span>
+                      <span>{claim.claim['Dependent Care FSA Provider Name']}</span>
+                    </div>
+                  )}
+                  {claim.claim['Daycare Cost (Dependent Care FSA)'] && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Daycare Cost:</span>
+                      <span>${claim.claim['Daycare Cost (Dependent Care FSA)']}</span>
+                    </div>
+                  )}
+                  {claim.claim['Dependent Care FSA Service Dates (start and end dates)'] && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Service Dates:</span>
+                      <span className="text-xs">{claim.claim['Dependent Care FSA Service Dates (start and end dates)']}</span>
+                    </div>
+                  )}
+                  {claim.claim['Total: $ (Dependent Care FSA)'] && (
+                    <div className="flex justify-between font-semibold border-t pt-2">
+                      <span>Total:</span>
+                      <span>${claim.claim['Total: $ (Dependent Care FSA)']}</span>
+                    </div>
+                  )}
+                  {claim.claim['Provider\'s Signature (Dependent Care FSA)'] && (
+                    <div className="pt-2 border-t">
+                      <div className="font-medium mb-1">Provider's Signature:</div>
+                      <div className="text-xs text-muted-foreground">{claim.claim['Provider\'s Signature (Dependent Care FSA)']}</div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -294,13 +519,25 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
           {/* Bill Files from API */}
           {claim.bill_files && claim.bill_files.length > 0 && (
             <div>
-              <h2 className="text-xl mb-4">Bill Files</h2>
+              <h2 className="text-xl mb-4">Bill Files ({claim.bill_files.length})</h2>
               <div className="space-y-2">
                 {claim.bill_files.map((fileName, index) => (
-                  <div key={index} className="p-2 bg-muted rounded text-sm">
-                    📄 {fileName}
+                  <div key={index} className="p-3 bg-muted rounded-lg text-sm flex items-center gap-2">
+                    <span className="text-lg">📄</span>
+                    <span className="flex-1 truncate">{fileName}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Claim File */}
+          {claim.claim_file && (
+            <div>
+              <h2 className="text-xl mb-4">Claim Form File</h2>
+              <div className="p-3 bg-muted rounded-lg text-sm flex items-center gap-2">
+                <span className="text-lg">📋</span>
+                <span className="flex-1 truncate">{claim.claim_file}</span>
               </div>
             </div>
           )}

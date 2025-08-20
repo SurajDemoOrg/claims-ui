@@ -34,20 +34,26 @@ export interface ExtractedReceiptData {
 export interface PreviousClaim {
   id: string;
   dateSubmitted: string;
-  claimantName: string;
+  ParticipantName: string;
   totalAmount: string;
   status: 'PROCESSED' | 'PENDING' | 'ANOMALY_DETECTED';
   anomalies?: string[];
+  employeeId?: string;
+  employerName?: string;
+  planType?: string;
+  provider?: string;
 }
 
 // Updated DetailedClaim interface to match API response structure
 export interface DetailedClaim {
   id: string;
   dateSubmitted: string;
-  claimantName: string;
+  ParticipantName: string;
   totalAmount: string;
   status: 'PROCESSED' | 'PENDING' | 'ANOMALY_DETECTED';
   anomalies: string[];
+  created_at?: string;
+  updated_at?: string;
   bill: {
     amount: string;
     date: string;

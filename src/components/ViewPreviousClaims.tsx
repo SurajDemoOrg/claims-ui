@@ -15,7 +15,7 @@ export function ViewPreviousClaims({ claims, onViewClaim }: ViewPreviousClaimsPr
   // Filter claims based on search term
   const filteredClaims = claims.filter(claim => 
     claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    claim.claimantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    claim.ParticipantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     getDisplayStatus(claim.status).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -52,21 +52,6 @@ export function ViewPreviousClaims({ claims, onViewClaim }: ViewPreviousClaimsPr
         <p className="text-muted-foreground mb-4">
           Click on any claim to view detailed information, documents, and extracted data.
         </p>
-        
-        {/* Search and Filter Bar */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <Input
-              placeholder="Search by Claim ID, Claimant Name, or Status..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
-            />
-          </div>
-          <div className="text-sm text-muted-foreground flex items-center">
-            Showing {filteredClaims.length} of {claims.length} claims
-          </div>
-        </div>
       </div>
 
       <div className="border border-border rounded-lg overflow-hidden">
@@ -75,7 +60,7 @@ export function ViewPreviousClaims({ claims, onViewClaim }: ViewPreviousClaimsPr
             <TableRow>
               <TableHead>Claim ID</TableHead>
               <TableHead>Date Submitted</TableHead>
-              <TableHead>Claimant Name</TableHead>
+              <TableHead>Participant Name</TableHead>
               <TableHead>Total Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Anomalies</TableHead>
@@ -90,7 +75,7 @@ export function ViewPreviousClaims({ claims, onViewClaim }: ViewPreviousClaimsPr
               >
                 <TableCell className="font-medium">{claim.id}</TableCell>
                 <TableCell>{new Date(claim.dateSubmitted).toLocaleDateString()}</TableCell>
-                <TableCell>{claim.claimantName}</TableCell>
+                <TableCell>{claim.ParticipantName}</TableCell>
                 <TableCell>{claim.totalAmount}</TableCell>
                 <TableCell>
                   <Badge className={getStatusColor(claim.status)}>

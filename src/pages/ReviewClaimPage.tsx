@@ -43,7 +43,7 @@ export function ReviewClaimPage() {
     const newClaim = {
       id: claimId,
       dateSubmitted: new Date().toISOString().split('T')[0],
-      claimantName: formData.participantName || 'New Claimant',
+      ParticipantName: formData.participantName || 'New Claimant',
       totalAmount: '$' + formData.totalAmount,
       status: 'Pending Review' as const,
       formData,

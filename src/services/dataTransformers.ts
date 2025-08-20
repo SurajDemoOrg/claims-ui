@@ -6,10 +6,14 @@ export function transformToPreviousClaim(apiClaim: ClaimResponse): PreviousClaim
   return {
     id: apiClaim.id,
     dateSubmitted: new Date(apiClaim.created_at).toLocaleDateString(),
-    claimantName: apiClaim.claim['Participant Name (First, MI, Last)'] || 'Unknown',
+    ParticipantName: apiClaim.claim['Participant Name (First, MI, Last)'] || 'Unknown',
     totalAmount: `$${apiClaim.bill.amount}`,
     status: apiClaim.claim_status,
-    anomalies: apiClaim.anomalies
+    anomalies: apiClaim.anomalies,
+    employeeId: apiClaim.claim['Employee ID'],
+    employerName: apiClaim.claim['Employer Name'],
+    planType: apiClaim.claim['Plan Type'],
+    provider: apiClaim.bill.provider
   };
 }
 
@@ -18,10 +22,12 @@ export function transformToDetailedClaim(apiClaim: ClaimResponse): DetailedClaim
   return {
     id: apiClaim.id,
     dateSubmitted: new Date(apiClaim.created_at).toLocaleDateString(),
-    claimantName: apiClaim.claim['Participant Name (First, MI, Last)'] || 'Unknown',
+    ParticipantName: apiClaim.claim['Participant Name (First, MI, Last)'] || 'Unknown',
     totalAmount: `$${apiClaim.bill.amount}`,
     status: apiClaim.claim_status,
     anomalies: apiClaim.anomalies,
+    created_at: apiClaim.created_at,
+    updated_at: apiClaim.updated_at,
     bill: apiClaim.bill,
     bill_files: apiClaim.bill_files,
     claim: apiClaim.claim,

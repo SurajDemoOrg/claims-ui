@@ -27,21 +27,21 @@ export function ViewPreviousClaimsPage() {
         {
           id: 'CL-2024-001',
           dateSubmitted: '2024-01-15',
-          claimantName: 'John Smith',
+          ParticipantName: 'John Smith',
           totalAmount: '$245.67',
           status: 'PROCESSED'
         },
         {
           id: 'CL-2024-002',
           dateSubmitted: '2024-01-18',
-          claimantName: 'Sarah Johnson',
+          ParticipantName: 'Sarah Johnson',
           totalAmount: '$89.23',
           status: 'PENDING'
         },
         {
           id: 'CL-2024-003',
           dateSubmitted: '2024-01-22',
-          claimantName: 'Mike Davis',
+          ParticipantName: 'Mike Davis',
           totalAmount: '$156.44',
           status: 'ANOMALY_DETECTED'
         }

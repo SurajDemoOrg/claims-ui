@@ -129,7 +129,7 @@ The application includes fallback mechanisms for robustness:
 ## New Features
 
 ### Search and Filtering
-- Search claims by ID, claimant name, or status
+- Search claims by ID, Participant Name, or status
 - Real-time filtering as you type
 - Clear search functionality
 
