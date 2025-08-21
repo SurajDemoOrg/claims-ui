@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProcessNewClaim } from '../components/ProcessNewClaim';
 import { UploadedFile } from '../App';
 import { claimsApi } from '../services/claimsApi';
+import { fileService } from '../services/fileService';
 import { logger } from '../utils/logger';
 
 export function ProcessNewClaimPage() {
@@ -130,6 +131,27 @@ export function ProcessNewClaimPage() {
           duration: Math.round(duration)
         }
       });
+
+      // Save files to local storage after successful submission
+      try {
+        await fileService.saveClaimFiles(response.id, claimFormFile, receiptFiles);
+        logger.info('Files saved successfully after claim submission', {
+          component: 'ProcessNewClaimPage',
+          action: 'save_files',
+          claimId: response.id,
+          metadata: {
+            claimFileName: claimFormFile.name,
+            billCount: receiptFiles.length
+          }
+        });
+      } catch (fileError) {
+        // Log the error but don't fail the submission since the API call was successful
+        logger.error('Failed to save files after successful claim submission', {
+          component: 'ProcessNewClaimPage',
+          action: 'save_files',
+          claimId: response.id
+        }, fileError as Error);
+      }
       
       // Show success state
       setIsSubmitting(false);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DetailedClaim } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -9,7 +9,10 @@ import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { DocumentViewer } from './DocumentViewer';
 import { DocumentThumbnail } from './DocumentThumbnail';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { fileService } from '../services/fileService';
+import { downloadFileFromStorage, formatFileSize, isImageFile, isPDFFile } from '../utils/fileHelpers';
+import { logger } from '../utils/logger';
+import { ArrowLeft, AlertTriangle, Download, FileText, Image } from 'lucide-react';
 
 interface ViewClaimDetailProps {
   claim: DetailedClaim;
@@ -18,6 +21,135 @@ interface ViewClaimDetailProps {
 
 export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [savedClaimFiles, setSavedClaimFiles] = useState<any[]>([]);
+  const [savedBillFiles, setSavedBillFiles] = useState<any[]>([]);
+  const [loadingSavedFiles, setLoadingSavedFiles] = useState(true);
+
+  // Load saved files on component mount
+  useEffect(() => {
+    loadSavedFiles();
+  }, [claim.id]);
+
+  const loadSavedFiles = async () => {
+    try {
+      setLoadingSavedFiles(true);
+      const { claimFiles, billFiles } = await fileService.listClaimFiles(claim.id);
+      
+      // Get file info for each path
+      const claimFileInfos = await Promise.all(
+        claimFiles.map(async (path) => {
+          const storedData = localStorage.getItem(`file:${path}`);
+          if (storedData) {
+            const fileInfo = JSON.parse(storedData);
+            return {
+              id: path,
+              path,
+              name: fileInfo.name,
+              type: fileInfo.type,
+              size: fileInfo.size,
+              savedAt: fileInfo.savedAt,
+              isSaved: true
+            };
+          }
+          return null;
+        })
+      );
+
+      const billFileInfos = await Promise.all(
+        billFiles.map(async (path) => {
+          const storedData = localStorage.getItem(`file:${path}`);
+          if (storedData) {
+            const fileInfo = JSON.parse(storedData);
+            return {
+              id: path,
+              path,
+              name: fileInfo.name,
+              type: fileInfo.type,
+              size: fileInfo.size,
+              savedAt: fileInfo.savedAt,
+              isSaved: true
+            };
+          }
+          return null;
+        })
+      );
+
+      setSavedClaimFiles(claimFileInfos.filter((f): f is any => f !== null));
+      setSavedBillFiles(billFileInfos.filter((f): f is any => f !== null));
+
+      logger.debug('Loaded saved files for claim', {
+        component: 'ViewClaimDetail',
+        action: 'loadSavedFiles',
+        claimId: claim.id,
+        metadata: {
+          claimFileCount: claimFileInfos.filter(f => f !== null).length,
+          billFileCount: billFileInfos.filter(f => f !== null).length
+        }
+      });
+    } catch (err) {
+      logger.error('Failed to load saved files', {
+        component: 'ViewClaimDetail',
+        action: 'loadSavedFiles',
+        claimId: claim.id
+      }, err as Error);
+    } finally {
+      setLoadingSavedFiles(false);
+    }
+  };
+
+  const handleDownloadSavedFile = async (savedFile: any) => {
+    try {
+      await downloadFileFromStorage(savedFile.path, savedFile.name);
+      logger.userAction('saved_file_downloaded', {
+        component: 'ViewClaimDetail',
+        claimId: claim.id,
+        metadata: {
+          fileName: savedFile.name,
+          filePath: savedFile.path
+        }
+      });
+    } catch (err) {
+      logger.error('Failed to download saved file', {
+        component: 'ViewClaimDetail',
+        action: 'handleDownloadSavedFile',
+        claimId: claim.id,
+        metadata: { fileName: savedFile.name }
+      }, err as Error);
+    }
+  };
+
+  const getSavedFileIcon = (savedFile: any) => {
+    if (isPDFFile(savedFile.name)) {
+      return <FileText className="w-5 h-5 text-red-500" />;
+    } else if (isImageFile(savedFile.name)) {
+      return <Image className="w-5 h-5 text-green-500" />;
+    } else {
+      return <FileText className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  const handleViewSavedFile = (savedFile: any) => {
+    // Create a document object compatible with DocumentViewer
+    const savedFileDocument = {
+      id: savedFile.path,
+      path: savedFile.path,
+      name: savedFile.name,
+      type: savedFile.type,
+      size: savedFile.size,
+      savedAt: savedFile.savedAt,
+      isSaved: true as const
+    };
+    setSelectedDocument(savedFileDocument);
+    
+    logger.userAction('saved_file_viewed', {
+      component: 'ViewClaimDetail',
+      claimId: claim.id,
+      metadata: {
+        fileName: savedFile.name,
+        filePath: savedFile.path
+      }
+    });
+  };
 
   // Helper to get form data with fallbacks to API structure
   const getFormData = () => {
@@ -95,7 +227,6 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
 
   const formData = getFormData();
   const receipts = claim.receipts || [];
-  const extractedReceiptData = claim.extractedReceiptData || [];
   const claimForm = claim.claimForm;
 
   const getStatusColor = (status: DetailedClaim['status']) => {
@@ -158,17 +289,63 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
           </div>
 
           {/* Claim Form Preview */}
-          {claimForm && (
+          {(claimForm || savedClaimFiles.length > 0) && (
             <Card className="mb-6">
               <CardHeader>
-                <CardTitle>Original Claim Form</CardTitle>
+                <CardTitle>
+                  Claim Form
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <DocumentThumbnail
-                  document={claimForm}
-                  onClick={() => setSelectedDocument(claimForm)}
-                  className="w-full"
-                />
+                
+                {/* Saved claim files */}
+                {savedClaimFiles.length > 0 && (
+                  <div>
+                    <div className="space-y-2">
+                      {savedClaimFiles.map((savedFile, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                          <div 
+                            className="flex items-center space-x-3 flex-1 cursor-pointer"
+                            onClick={() => handleViewSavedFile(savedFile)}
+                          >
+                            {getSavedFileIcon(savedFile)}
+                            <div>
+                              <p className="text-sm font-medium text-gray-900 hover:text-blue-600">
+                                {savedFile.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatFileSize(savedFile.size)} • Saved {new Date(savedFile.savedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewSavedFile(savedFile)}
+                              className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadSavedFile(savedFile)}
+                              className="flex items-center gap-1"
+                            >
+                              <Download className="w-4 h-4" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {!claimForm && savedClaimFiles.length === 0 && !loadingSavedFiles && (
+                  <p className="text-sm text-muted-foreground italic">No claim form available</p>
+                )}
               </CardContent>
             </Card>
           )}
@@ -440,22 +617,63 @@ export function ViewClaimDetail({ claim, onBack }: ViewClaimDetailProps) {
       <div className="w-96 border-l border-border p-6 overflow-auto">
         <div className="space-y-6">
           {/* Bill Receipts */}
-          {receipts.length > 0 && (
+          {(receipts.length > 0 || savedBillFiles.length > 0) && (
             <div>
-              <h2 className="text-xl mb-4">Bill Receipts ({receipts.length})</h2>
-              <div className="grid grid-cols-2 gap-3">
-                {receipts.map((receipt) => (
-                  <DocumentThumbnail
-                    key={receipt.id}
-                    document={receipt}
-                    onClick={() => setSelectedDocument(receipt)}
-                  />
-                ))}
-              </div>
+              <h2 className="text-xl mb-4">
+                Bill Receipts ({receipts.length + savedBillFiles.length})
+              </h2>
+              
+              {/* Saved bill files */}
+              {savedBillFiles.length > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Original Uploaded Receipts {loadingSavedFiles && "(loading...)"}:
+                  </p>
+                  <div className="space-y-2">
+                    {savedBillFiles.map((savedFile, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div 
+                          className="flex items-center space-x-3 flex-1 cursor-pointer"
+                          onClick={() => handleViewSavedFile(savedFile)}
+                        >
+                          {getSavedFileIcon(savedFile)}
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 hover:text-blue-600">
+                              {savedFile.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(savedFile.size)} • Saved {new Date(savedFile.savedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewSavedFile(savedFile)}
+                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadSavedFile(savedFile)}
+                            className="flex items-center gap-1"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          
+          {/* Remove the old Saved Files Section */}
 
           {/* Dependent Care FSA Information */}
           {claim.claim && (
