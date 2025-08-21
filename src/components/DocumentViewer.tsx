@@ -298,11 +298,12 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
               </div>
             ) : isPDF && documentUrl ? (
               // PDF display
-              <div className="w-full h-full min-h-[600px] bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="w-full h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
                 <iframe
                   src={`${documentUrl}#view=FitH`}
                   className="w-full h-full border-0"
                   title={document.name}
+                  style={{ minHeight: '500px', height: '100%' }}
                   onError={() => setError('Failed to load PDF')}
                 />
               </div>
